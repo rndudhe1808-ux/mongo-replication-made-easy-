@@ -1,36 +1,54 @@
+==============================
+MongoDB Secondary Node Setup
+==============================
+
+# 1. Install basic tools
 apt install vim curl wget ssh -y 
 apt-get update -y
 apt-get upgrade -y
-curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc |    sudo gpg -o /usr/share/keyrings/mongodb-server-8.0.gpg    --dearmor
+
+# 2. Add MongoDB GPG key
+curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | sudo gpg -o /usr/share/keyrings/mongodb-server-8.0.gpg --dearmor
+
+# 3. Add MongoDB repository
 echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/8.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-8.0.list
+
+# 4. Download and install MongoDB Compass (GUI)
 wget https://downloads.mongodb.com/compass/mongodb-compass_1.46.8_amd64.deb
 dpkg -i mongodb-compass_1.46.8_amd64.deb 
+
+# 5. Update package list and install MongoDB
 apt-get update
 apt-get install -y mongodb-org
+
+# 6. Edit MongoDB configuration (optional)
 vi /etc/mongod.conf 
-##secondary-side
-cat /etc/mongod.conf 
-# mongod.conf
-# for documentation of all options, see:
-#   http://docs.mongodb.org/manual/reference/configuration-options/
-# Where and how to store data.
+
+# 7. Secondary Node Config (/etc/mongod.conf)
+# ------------------------------------------
+# storage
 storage:
   dbPath: /var/lib/mongodb
-#  engine:
-#  wiredTiger:
-# where to write logging data.
+
+# system log
 systemLog:
   destination: file
   logAppend: true
   path: /var/log/mongodb/mongod.log
+
 # network interfaces
 net:
   port: 27017
   bindIp: 0.0.0.0
-# how the process runs
+
+# process management
 processManagement:
-##
+  # optional settings
+
+# 8. Reload systemd, enable and restart MongoDB
 systemctl daemon-reload
 systemctl enable mongod
 systemctl restart mongod
-ufw allow 27017/tcp  
+
+# 9. Open firewall for MongoDB port
+ufw allow 27017/tcp
