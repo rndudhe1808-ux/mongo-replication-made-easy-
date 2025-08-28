@@ -1,63 +1,89 @@
-# on master 
+==============================
+MongoDB Replica Set Setup – Master/Secondary
+==============================
+
+# On Master (Primary VM)
+
+# Basic tools
 apt install vim curl wget ssh -y 
 apt-get update -y
 apt-get upgrade -y
+
+# Check Ubuntu version
 cat /etc/lsb-release
+
+# Install gnupg and curl
 apt-get install gnupg curl
-curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc |    sudo gpg -o /usr/share/keyrings/mongodb-server-8.0.gpg    --dearmor
+
+# Add MongoDB GPG key
+curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | sudo gpg -o /usr/share/keyrings/mongodb-server-8.0.gpg --dearmor
+
+# Add MongoDB repository
 echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/8.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-8.0.list
+
+# Update package list and install MongoDB
 apt-get update
 apt-get install -y mongodb-org
+
+# Start and enable MongoDB service
 systemctl start mongod
 systemctl enable mongod
 systemctl status mongod
+
+# Install MongoDB Compass GUI
 wget https://downloads.mongodb.com/compass/mongodb-compass_1.46.8_amd64.deb
 dpkg -i mongodb-compass_1.46.8_amd64.deb 
+
+# Check MongoDB service
 systemctl status mongod.service 
+
+# Edit MongoDB config
 vi /etc/mongod.conf
+
+# Restart MongoDB after editing config
 systemctl restart mongod
+
+# Open firewall port for MongoDB
 sudo ufw allow 27017/tcp
-vi /etc/mongod.conf 
-##master node conf
-cat /etc/mongod.conf 
-# mongod.conf
-# for documentation of all options, see:
-#   http://docs.mongodb.org/manual/reference/configuration-options/
-# Where and how to store data.
+
+# MongoDB Master Node Config (/etc/mongod.conf)
+# ----------------------------
+# storage
 storage:
   dbPath: /var/lib/mongodb
-#  engine:
-#  wiredTiger:
-# where to write logging data.
+
+# system log
 systemLog:
   destination: file
   logAppend: true
   path: /var/log/mongodb/mongod.log
+
 # network interfaces
 net:
   port: 27017
   bindIp: 0.0.0.0
-# how the process runs
+
+# process management
 processManagement:
   timeZoneInfo: /usr/share/zoneinfo
-#security:
-#operationProfiling:
+
+# replication
 replication:
   replSetName: "rs0"
-#sharding:
-## Enterprise-Only Options:
-#auditLog:
+
+# security
 security:
   authorization: disabled
-###
+
+# Restart MongoDB and open firewall
 systemctl enable mongod
 systemctl restart mongod
-ufw allow 27017/tcp    # firewall open karo
-systemctl enable mongod
-systemctl restart mongod
-ufw allow 27017/tcp    # firewall open karo
-  mongosh
-## add this inside mongosh terminal
+ufw allow 27017/tcp
+
+# Start Mongo shell
+mongosh
+
+# Inside mongosh terminal – Initiate Replica Set
 rs.initiate({
   _id: "rs0",
   members: [
@@ -65,20 +91,21 @@ rs.initiate({
     { _id: 1, host: "192.168.163.130:27017" }
   ]
 })
+
+# Check Replica Set status
 rs.status()
-##
-Test Replication
-Insert data in primary:
+
+# Test Replication – Insert data in Primary
 use testDB
 db.testCollection.insert({name:"Rameshwar"})
 
-Secondary VM pe connect aur check karo:
-
-mongosh --host VM2_IP
+# Connect to Secondary VM and verify data
+mongosh --host 192.168.163.130
 use testDB
 db.testCollection.find()
-####################################
-💡 Tip: Agar aap pehli baar try kar rahe ho aur kuch partial set initiate hua hai, pehle reset karo:
+
+# Tip for first-time partial initiation
+# If partial replica set exists, reset first
 rs.remove("192.168.163.130:27017")
-Phir dobara add karo:
+# Then re-add
 rs.add("192.168.163.130:27017")
