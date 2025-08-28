@@ -1,1 +1,93 @@
 
+==============================
+MongoDB Replica Set Setup Guide
+==============================
+
+------------------------------
+VM1 (Primary)
+------------------------------
+
+1. MongoDB Install
+------------------
+wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo gpg --dearmor -o /usr/share/keyrings/mongodb-archive-keyring.gpg
+echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-archive-keyring.gpg ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+sudo apt update
+sudo apt install -y mongodb-org
+
+2. Configure MongoDB
+-------------------
+# Edit /etc/mongod.conf
+net:
+  port: 27017
+  bindIp: 0.0.0.0
+replication:
+  replSetName: "rs0"
+security:
+  authorization: disabled
+
+# Restart MongoDB
+sudo systemctl enable mongod
+sudo systemctl restart mongod
+
+# Open firewall
+sudo ufw allow 27017/tcp
+
+3. Initiate Replica Set
+-----------------------
+mongosh
+rs.initiate({
+  _id: "rs0",
+  members: [
+    { _id: 0, host: "192.168.163.128:27017" },
+    { _id: 1, host: "192.168.163.130:27017" }
+  ]
+})
+rs.status()
+
+------------------------------
+VM2 (Secondary)
+------------------------------
+
+1. MongoDB Install
+------------------
+wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo gpg --dearmor -o /usr/share/keyrings/mongodb-archive-keyring.gpg
+echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-archive-keyring.gpg ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+sudo apt update
+sudo apt install -y mongodb-org
+
+2. Configure MongoDB
+-------------------
+# Edit /etc/mongod.conf
+net:
+  port: 27017
+  bindIp: 0.0.0.0
+replication:
+  replSetName: "rs0"
+security:
+  authorization: disabled
+
+# Restart MongoDB
+sudo systemctl enable mongod
+sudo systemctl restart mongod
+
+# Open firewall
+sudo ufw allow 27017/tcp
+
+3. Test Connectivity
+--------------------
+ping 192.168.163.128
+telnet 192.168.163.128 27017
+
+------------------------------
+Test Replication
+------------------------------
+
+# On Primary VM
+mongosh
+use testDB
+db.testCollection.insert({name:"Rameshwar"})
+
+# On Secondary VM
+mongosh --host 192.168.163.130
+use testDB
+db.testCollection.find()
