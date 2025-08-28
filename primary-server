@@ -56,4 +56,29 @@ ufw allow 27017/tcp    # firewall open karo
 systemctl enable mongod
 systemctl restart mongod
 ufw allow 27017/tcp    # firewall open karo
-   42  mongosh
+  mongosh
+## add this inside mongosh terminal
+rs.initiate({
+  _id: "rs0",
+  members: [
+    { _id: 0, host: "192.168.163.128:27017" },
+    { _id: 1, host: "192.168.163.130:27017" }
+  ]
+})
+rs.status()
+##
+Test Replication
+Insert data in primary:
+use testDB
+db.testCollection.insert({name:"Rameshwar"})
+
+Secondary VM pe connect aur check karo:
+
+mongosh --host VM2_IP
+use testDB
+db.testCollection.find()
+####################################
+💡 Tip: Agar aap pehli baar try kar rahe ho aur kuch partial set initiate hua hai, pehle reset karo:
+rs.remove("192.168.163.130:27017")
+Phir dobara add karo:
+rs.add("192.168.163.130:27017")
